@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: reposync
+localRepoDir:
+  C:\clones\
+githubPAT:
+  placeholder
+githubUsername:
+  swatt3r
+gitlabPAT:
+  placeholder
+gitlabUsername:
+  ser4an007
