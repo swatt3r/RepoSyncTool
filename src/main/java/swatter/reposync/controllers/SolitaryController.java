@@ -1,15 +1,13 @@
 package swatter.reposync.controllers;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import swatter.reposync.exceptions.ExceptionWithStatusCode;
 import swatter.reposync.services.GitService;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/solitary")
@@ -22,34 +20,28 @@ public class SolitaryController {
     }
 
     @PostMapping("/source")
-    public void postRepoFromSource(@RequestBody String repoName, HttpServletResponse response) throws IOException {
+    public ResponseEntity<?> postRepoFromSource(@RequestBody String repoName) {
         try {
             gitService.syncToLocal(repoName);
         } catch (ExceptionWithStatusCode e) {
-            response.getWriter().println(e.getMessage());
-            response.setStatus(e.getStatusCode());
-            return;
+            return ResponseEntity.status(e.getStatusCode()).body(e.getMessage());
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            return;
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
 
-        response.setStatus(HttpServletResponse.SC_OK);
+        return ResponseEntity.ok("Success");
     }
 
     @PostMapping("/target")
-    public void postRepoToTarget(@RequestBody String repoName, HttpServletResponse response) throws IOException {
+    public ResponseEntity<?> postRepoToTarget(@RequestBody String repoName) {
         try {
             gitService.syncToTarget(repoName);
         } catch (ExceptionWithStatusCode e) {
-            response.getWriter().println(e.getMessage());
-            response.setStatus(e.getStatusCode());
-            return;
+            return ResponseEntity.status(e.getStatusCode()).body(e.getMessage());
         } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            return;
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
 
-        response.setStatus(HttpServletResponse.SC_OK);
+        return ResponseEntity.ok("Success");
     }
 }

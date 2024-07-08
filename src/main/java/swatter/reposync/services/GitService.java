@@ -6,12 +6,14 @@ import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.api.RemoteAddCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import swatter.reposync.entities.Source;
+import swatter.reposync.entities.Target;
 import swatter.reposync.exceptions.ExceptionWithStatusCode;
 
 import java.io.File;
@@ -26,29 +28,20 @@ public class GitService {
     @Value("${localRepoDir}")
     private String localRepoDir;
 
-    @Value("${githubUsername}")
-    private String githubUsername;
+    private final Source source;
 
-    @Value("${gitlabUsername}")
-    private String gitlabUsername;
-
-    private final CredentialsProvider gitlabCredentials;
-
-    private final CredentialsProvider githubCredentials;
-
-    private final GitLabService gitLabService;
+    private final Target target;
 
     @Autowired
-    public GitService(CredentialsProvider gitlabCredentials, CredentialsProvider githubCredentials, GitLabService gitLabService) {
-        this.gitlabCredentials = gitlabCredentials;
-        this.githubCredentials = githubCredentials;
-        this.gitLabService = gitLabService;
+    public GitService(Source source, Target target) {
+        this.source = source;
+        this.target = target;
     }
 
     public void syncToLocal(String repoName) throws GitAPIException, ExceptionWithStatusCode {
         List<Ref> refs;
 
-        String remoteURL = "https://github.com/" + githubUsername + "/" + repoName + ".git";
+        String remoteURL = source.getURL() + source.getUsername() + "/" + repoName + ".git";
 
         File localRepo = new File(localRepoDir + repoName);
         if (!localRepo.exists()) {
@@ -77,7 +70,7 @@ public class GitService {
                 git.pull()
                         .setRemote("origin")
                         .setRemoteBranchName(branch)
-                        .setCredentialsProvider(githubCredentials)
+                        .setCredentialsProvider(source.getCredentials())
                         .call();
             }
         } catch (IOException e) {
@@ -89,7 +82,7 @@ public class GitService {
         try (Git git = Git.cloneRepository()
                 .setURI(remoteURL)
                 .setDirectory(localRepo)
-                .setCredentialsProvider(githubCredentials)
+                .setCredentialsProvider(source.getCredentials())
                 .call()) {
             List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
 
@@ -98,7 +91,7 @@ public class GitService {
 
                 try {
                     git.branchCreate().setName(branch).call();
-                } catch (GitAPIException ignored) {
+                } catch (RefAlreadyExistsException ignored) {
                 }
             }
         } catch (GitAPIException e) {
@@ -106,7 +99,8 @@ public class GitService {
                 FileUtils.cleanDirectory(localRepo);
                 FileUtils.deleteDirectory(localRepo);
                 throw new ExceptionWithStatusCode("Local repository \"" + localRepo.getName() + "\" cannot be created", 400);
-            } catch (IOException ignored) {
+            } catch (IOException exception) {
+                throw new ExceptionWithStatusCode("Local repository \"" + localRepo.getName() + "\" cannot be created", 400);
             }
         }
     }
@@ -118,9 +112,9 @@ public class GitService {
         }
 
         try (Git git = Git.open(localRepo)) {
-            String remoteURL = "https://gitlab.com/" + gitlabUsername + "/" + repoName + ".git";
+            String remoteURL = target.getURL() + target.getUsername() + "/" + repoName + ".git";
 
-            if (gitLabService.createRepo(repoName)) {
+            if (target.getService().createRepo(repoName)) {
                 RemoteAddCommand remoteAddCommand = git.remoteAdd();
                 remoteAddCommand.setName("newOrigin");
                 remoteAddCommand.setUri(new URIish(remoteURL));
@@ -135,7 +129,7 @@ public class GitService {
             }
 
             pushCommand.setRemote("newOrigin")
-                    .setCredentialsProvider(gitlabCredentials)
+                    .setCredentialsProvider(target.getCredentials())
                     .call();
 
         } catch (IOException e) {

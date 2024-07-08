@@ -34,8 +34,9 @@ public class GitHubService {
         List<Repository> repositoryList = new ArrayList<>();
 
         int page = 1;
-        while (true) {
-            String response = webClient
+        String response;
+        do {
+            response = webClient
                     .get()
                     .uri("https://api.github.com/user/repos?page=" + page)
                     .headers(httpHeaders -> httpHeaders.setBearerAuth(githubPAT))
@@ -47,18 +48,18 @@ public class GitHubService {
                     .bodyToMono(String.class)
                     .block();
 
-            if ("[]" .equals(response)) {
-                break;
-            }
-
             try {
                 repositoryList.addAll(objectMapper.readValue(response, new TypeReference<>() {
                 }));
-            } catch (JsonProcessingException ignored) {
+            } catch (JsonProcessingException e) {
+                Repository repository = new Repository();
+                repository.setName("Remote source response mapping exception");
+                repositoryList.add(repository);
             }
 
             page++;
-        }
+        } while (!"[]".equals(response));
+
 
         return repositoryList;
     }
