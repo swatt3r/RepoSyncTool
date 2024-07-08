@@ -3,14 +3,13 @@ package swatter.reposync.entities;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import swatter.reposync.services.GitHubService;
 
 @Component
 public class Source {
-    private final Environment env;
+    private final String username;
 
     private final GitHubService gitHubService;
 
@@ -19,11 +18,11 @@ public class Source {
     public Source(@Autowired GitHubService gitHubService, Environment env) {
         this.credentialsProvider = new UsernamePasswordCredentialsProvider("PRIVATE-TOKEN", env.getProperty("githubPAT", ""));
         this.gitHubService = gitHubService;
-        this.env = env;
+        this.username = env.getProperty("githubUsername", "");
     }
 
     public String getUsername() {
-        return this.env.getProperty("githubUsername", "");
+        return this.username;
     }
 
     public GitHubService getService() {
