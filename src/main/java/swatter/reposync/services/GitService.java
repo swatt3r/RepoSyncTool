@@ -12,6 +12,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import swatter.reposync.entities.Repository;
 import swatter.reposync.entities.Source;
 import swatter.reposync.entities.Target;
 import swatter.reposync.exceptions.ExceptionWithStatusCode;
@@ -119,6 +120,17 @@ public class GitService {
                 remoteAddCommand.setName("newOrigin");
                 remoteAddCommand.setUri(new URIish(remoteURL));
                 remoteAddCommand.call();
+            }else {
+                try {
+                    git.push().setRemote("newOrigin")
+                            .setCredentialsProvider(target.getCredentials())
+                            .call();
+                }catch (GitAPIException e){
+                    RemoteAddCommand remoteAddCommand = git.remoteAdd();
+                    remoteAddCommand.setName("newOrigin");
+                    remoteAddCommand.setUri(new URIish(remoteURL));
+                    remoteAddCommand.call();
+                }
             }
 
             List<Ref> refs = git.branchList().call();
@@ -139,13 +151,15 @@ public class GitService {
         }
     }
 
-    public List<String> getAllLocalRepos() {
-        List<String> reposNames = new ArrayList<>();
+    public List<Repository> getAllLocalRepos() {
+        List<Repository> reposNames = new ArrayList<>();
         File localRepo = new File(localRepoDir);
 
         if (localRepo.isDirectory()) {
             for (File repo : Objects.requireNonNull(localRepo.listFiles())) {
-                reposNames.add(repo.getName());
+                Repository repository = new Repository();
+                repository.setName(repo.getName());
+                reposNames.add(repository);
             }
         }
         return reposNames;

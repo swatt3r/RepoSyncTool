@@ -37,6 +37,18 @@ public class AllController {
         return ResponseEntity.ok(repositoryList);
     }
 
+    @GetMapping("/localRepos")
+    public ResponseEntity<?> getAllLocalRepositories() {
+        List<Repository> repositoryList;
+        try {
+            repositoryList = gitService.getAllLocalRepos();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+
+        return ResponseEntity.ok(repositoryList);
+    }
+
     @PostMapping("/source")
     public ResponseEntity<?> postAllRepoFromSource() {
         List<Repository> repositoryList = gitHubService.getRepositories();
@@ -56,11 +68,11 @@ public class AllController {
 
     @PostMapping("/target")
     public ResponseEntity<?> postAllRepoToTarget() {
-        List<String> repositoryList = gitService.getAllLocalRepos();
+        List<Repository> repositoryList = gitService.getAllLocalRepos();
 
-        for (String repo : repositoryList) {
+        for (Repository repo : repositoryList) {
             try {
-                gitService.syncToTarget(repo);
+                gitService.syncToTarget(repo.getName());
             } catch (ExceptionWithStatusCode e) {
                 return ResponseEntity.status(e.getStatusCode()).body(e.getMessage());
             } catch (Exception e) {

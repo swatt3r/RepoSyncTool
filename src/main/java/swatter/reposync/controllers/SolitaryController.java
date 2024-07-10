@@ -29,7 +29,7 @@ public class SolitaryController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
 
-        return ResponseEntity.ok("Success");
+        return ResponseEntity.ok("");
     }
 
     @PostMapping("/target")
@@ -42,6 +42,6 @@ public class SolitaryController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
 
-        return ResponseEntity.ok("Success");
+        return ResponseEntity.ok("");
     }
 }
