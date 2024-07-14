@@ -4,10 +4,10 @@ spring:
 localRepoDir:
   C:\clones\
 githubPAT:
-  placeholder
+  ${githubPAT}
 githubUsername:
   swatt3r
 gitlabPAT:
-  placeholder
+  ${gitlabPAT}
 gitlabUsername:
   ser4an007
